@@ -1,7 +1,9 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware   # ✅ MISSING IMPORT
+from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials, db
+import os
+import json
 
 # ✅ CREATE APP FIRST
 app = FastAPI()
@@ -15,10 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔹 Firebase Init (SAFE)
+# 🔹 Firebase Init (CLOUD SAFE)
 def init_firebase():
     if not firebase_admin._apps:
-        cred = credentials.Certificate("serviceAccountKey.json")
+        firebase_key = json.loads(os.environ["FIREBASE_KEY"])
+        cred = credentials.Certificate(firebase_key)
         firebase_admin.initialize_app(
             cred,
             {
@@ -43,12 +46,10 @@ def home():
 # 1️⃣ Stream → Branches
 @app.get("/api/{stream}")
 def get_stream(stream: str):
-    print("🔥 HIT /api/{stream} WITH:", stream)
     data = get_data(f"/{stream}")
     if not data:
         return {"error": "Data not found"}
     return list(data.keys())
-
 
 # 2️⃣ Stream + Branch → Semesters
 @app.get("/api/{stream}/{branch}")
@@ -72,4 +73,4 @@ def get_stream_branch_sem_sub(stream: str, branch: str, sem: str, sub: str):
     data = get_data(f"/{stream}/{branch}/{sem}/{sub}")
     if not data:
         return {"error": "Subject not found"}
-    return [data]
+    return data
